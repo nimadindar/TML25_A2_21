@@ -1,45 +1,29 @@
-import requests
 import torch
 import torch.nn as nn
-# Do install:
-# conda install onnx
-# conda install onnxruntime
-import onnxruntime as ort
+
 import numpy as np
-import json
+
+import os
+from dotenv import load_dotenv
+
 import io
 import sys
-import base64
-from torch.utils.data import Dataset
-from typing import Tuple
+import json
 import pickle
-import os
+import base64
+import requests
+import onnxruntime as ort
+
 
 cwd = os.getcwd()
 print('cwd: ', cwd)
 
-class TaskDataset(Dataset):
-    def __init__(self, transform=None):
 
-        self.ids = []
-        self.imgs = []
-        self.labels = []
-
-        self.transform = transform
-
-    def __getitem__(self, index) -> Tuple[int, torch.Tensor, int]:
-        id_ = self.ids[index]
-        img = self.imgs[index]
-        if not self.transform is None:
-            img = self.transform(img)
-        label = self.labels[index]
-        return id_, img, label
-
-    def __len__(self):
-        return len(self.ids)
 
 ### REQUESTING NEW API ###
-TOKEN = "1" # to be changed according to your token (given to you for the assignments via email)
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 response = requests.get("http://34.122.51.94:9090" + "/stealing_launch", headers={"token": TOKEN})
 answer = response.json()
