@@ -6,6 +6,8 @@ import numpy as np
 import os
 from dotenv import load_dotenv
 
+from dataset.dataset import TaskDataset
+
 import io
 import sys
 import json
@@ -25,19 +27,20 @@ print('cwd: ', cwd)
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
-response = requests.get("http://34.122.51.94:9090" + "/stealing_launch", headers={"token": TOKEN})
-answer = response.json()
+# response = requests.get("http://34.122.51.94:9090" + "/stealing_launch", headers={"token": TOKEN})
+# answer = response.json()
 
-print(answer)  # {"seed": "SEED", "port": PORT}
-if 'detail' in answer:
-    sys.exit(1)
+# print(answer)  # {"seed": "SEED", "port": PORT}
+# if 'detail' in answer:
+#     sys.exit(1)
 
-# save the values
-SEED = str(answer['seed'])
-PORT = str(answer['port'])
+# # save the values
+# SEED = str(answer['seed'])
+# PORT = str(answer['port'])
 
-# SEED = "1868949"
-# PORT = "9002"
+# Current SEED and PORT
+SEED = "32454959"
+PORT = "9478"
 
 ### QUERYING THE API ###
 
@@ -62,12 +65,12 @@ def model_stealing(images, port):
             f"Model stealing failed. Code: {response.status_code}, content: {response.json()}"
         )
 
-dataset = torch.load("ModelStealingPub.pt")
+dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
 out = model_stealing([dataset.imgs[idx] for idx in np.random.permutation(1000)], port=PORT)
 
 # Store the output in a file.
 # Be careful to store all the outputs from the API since the number of queries is limited.
-with open('out.pickle', 'wb') as handle:
+with open('./report/results/out.pickle', 'wb') as handle:
     pickle.dump(out, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # Restore the output from the file.
@@ -81,7 +84,7 @@ print(len(out))
 # Create a dummy model
 model = nn.Sequential(nn.Flatten(), nn.Linear(32*32*3, 1024))
 
-path = 'dummy_submission.onnx'
+path = './report/results/dummy_submission.onnx'
 
 torch.onnx.export(
     model,
