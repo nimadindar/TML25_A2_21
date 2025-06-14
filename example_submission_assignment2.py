@@ -70,11 +70,11 @@ out = model_stealing([dataset.imgs[idx] for idx in np.random.permutation(1000)],
 
 # Store the output in a file.
 # Be careful to store all the outputs from the API since the number of queries is limited.
-with open('./report/results/out.pickle', 'wb') as handle:
+with open('./results/out.pickle', 'wb') as handle:
     pickle.dump(out, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 # Restore the output from the file.
-with open('out.pickle', 'rb') as handle:
+with open('./results/out.pickle', 'rb') as handle:
     out = pickle.load(handle)
 
 print(len(out))
@@ -84,7 +84,7 @@ print(len(out))
 # Create a dummy model
 model = nn.Sequential(nn.Flatten(), nn.Linear(32*32*3, 1024))
 
-path = './report/results/dummy_submission.onnx'
+path = './results/dummy_submission.onnx'
 
 torch.onnx.export(
     model,
