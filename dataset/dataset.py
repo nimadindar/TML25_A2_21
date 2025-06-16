@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 
 from typing import Tuple, List
 
+
 class TaskDataset(Dataset):
 
     def __init__(
@@ -26,5 +27,5 @@ class TaskDataset(Dataset):
         img = self.imgs[index]
         views = [self.base_transform(img) for _ in range(self.num_augs)]
         target = self.api_embeddings[index]        
-        return views, target
+        return img, views, target
         
