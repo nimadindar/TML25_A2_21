@@ -1,4 +1,4 @@
-from dataset.dataset import TaskDataset
+from dataset.dataset import TaskDataset, MergedDataset
 from dataset.create_subset import get_random_subset
 
 from encoders.cnn_encoder import CNNencoder
@@ -15,14 +15,16 @@ from torch.utils.data import DataLoader
 
 import os
 import sys
+import pickle
 
 np.random.seed(TrainingConfig.SEED)
 torch.cuda.manual_seed_all(TrainingConfig.SEED)
 
 
 REQUEST_NEW_API = False
-STEAL = False
-QUERY = True
+QUERY = False
+STEAL = True
+
 
 if REQUEST_NEW_API:    
     model_stealer = ModelStealer(APIConfig.TOKEN)
@@ -57,15 +59,21 @@ elif STEAL:
     dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
     subset = get_random_subset(dataset, subset_index=APIConfig.IDX, seed = TrainingConfig.SEED)
 
-    dataloader = DataLoader(subset, batch_size=TrainingConfig.BATCH_SIZE)
+    with open(f'./results/out{APIConfig.IDX}.pickle', 'rb') as handle:
+        out = pickle.load(handle)
 
-    encoder = CNNencoder(TrainingConfig.ENCODER_NAME)
+    # To merge output representations with the subset of main dataset
+    merged_dataset = MergedDataset(subset, out)
 
-    stolen_encoder = StolenEncoder(
-        encoder, 
-        TrainingConfig.LR, 
-        TrainingConfig.NUM_EPOCHS, 
-        TrainingConfig.LAMBDA)
+    dataloader = DataLoader(merged_dataset, batch_size=TrainingConfig.BATCH_SIZE)
+
+    # encoder = CNNencoder(TrainingConfig.ENCODER_NAME)
+
+    # stolen_encoder = StolenEncoder(
+    #     encoder, 
+    #     TrainingConfig.LR, 
+    #     TrainingConfig.NUM_EPOCHS, 
+    #     TrainingConfig.LAMBDA)
 
     # stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX)
 

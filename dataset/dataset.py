@@ -29,4 +29,25 @@ class TaskDataset(Dataset):
             img = img.convert("RGB")
         views = [t(img) for t in Augmentations.AUGMENTATION_SET]
         return id_, img, views
+    
+    
+class MergedDataset(Dataset):
+    def __init__(self, subset, representations_dict):
+        self.subset = subset  
+        self.id_to_vector = dict(zip(representations_dict["ids"], representations_dict["representations"]))
+
+    def __len__(self):
+        return len(self.subset)
+
+    def __getitem__(self, index):
+        id_, img, views = self.subset[index]  
+
+        # Match representation using id
+        if id_ not in self.id_to_vector:
+            raise KeyError(f"ID {id_} not found in representations.")
+
+        target = torch.tensor(self.id_to_vector[id_], dtype=torch.float32)
+
+        return img, views, target 
+
         
