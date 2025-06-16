@@ -18,7 +18,7 @@ torch.cuda.manual_seed_all(TrainingConfig.SEED)
 
 
 REQUEST_NEW_API = False
-STEAL = True
+STEAL = False
 QUERY = True
 
 if REQUEST_NEW_API:    
@@ -30,11 +30,20 @@ if REQUEST_NEW_API:
 
 elif QUERY:
     dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
+    subset = get_random_subset(dataset, subset_index=APIConfig.IDX, seed= TrainingConfig.SEED)
+    model_stealer = ModelStealer(APIConfig.TOKEN)
+
+    image_ids = [dataset.ids[i] for i in subset.indices]
+    images = [dataset.imgs[i] for i in subset.indices]
+
+    representations = model_stealer.query_api(images, image_ids, APIConfig.IDX, APIConfig.PORT)
     
+    print(f"The representation for the given subset with id {APIConfig.IDX} with length {len(representations)} has been fetched. \
+            \n To view th output please refer to file saved in ./results/out{APIConfig.IDX}.pickle")
+
 
 elif STEAL:
-    current_seed = "32454959"
-    current_port = "9478"
+
 
     dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
     subset = get_random_subset(dataset, subset_index=APIConfig.IDX, seed = TrainingConfig.SEED)

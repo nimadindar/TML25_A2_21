@@ -8,6 +8,9 @@ class APIConfig:
     BASE_URL = "http://34.122.51.94:9090"
     TOKEN = os.getenv("TOKEN")
     IDX = 1 # This is used to keep track of the sequences of images queried through API.
+    SEED = "32454959"
+    PORT = "9478"
+
 
 class TrainingConfig:
     ENCODER_NAME = "cifar10_resnet20"

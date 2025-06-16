@@ -1,9 +1,9 @@
-import requests
-import base64
-import pickle
-import json
-import sys
 import io
+import json
+import pickle
+import base64
+import requests
+import sys
 
 class ModelStealer:
     def __init__(self, token: str, base_url: str = "http://34.122.51.94:9090"):
@@ -30,12 +30,12 @@ class ModelStealer:
             print(f"Exception occurred: {e}")
             sys.exit(1)
 
-    def query_api(self, images, images_idx, idx):
-        if self.port is None:
+    def query_api(self, images, image_ids, idx, port):
+        if port is None:
             raise ValueError("API port not set. Call `request_new_api()` first.")
 
         endpoint = "/query"
-        url = f"http://34.122.51.94:{self.port}{endpoint}"
+        url = f"http://34.122.51.94:{port}{endpoint}"
         image_data = []
 
         for img in images:
@@ -49,15 +49,15 @@ class ModelStealer:
         response = requests.get(url, files={"file": payload}, headers={"token": self.token})
 
         if response.status_code == 200:
-            output = response.json()["representations"]
-            self._save_output(output, idx)
-            return output
+            representations = response.json()["representations"]
+            self._save_output(representations, image_ids, idx)
+            return representations
         else:
             raise Exception(
                 f"Model stealing failed. Code: {response.status_code}, content: {response.json()}"
             )
 
-    def _save_output(self, output, idx):
+    def _save_output(self, representations, image_ids, idx):
         file_path = f"./results/out{idx}.pickle"
         with open(file_path, 'wb') as handle:
-            pickle.dump(output, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump({"ids": image_ids, "representations": representations}, handle, protocol=pickle.HIGHEST_PROTOCOL)

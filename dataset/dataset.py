@@ -15,7 +15,7 @@ class TaskDataset(Dataset):
         self.imgs = []     
         self.labels = []         
 
-        self.transforms = Augmentations.AUGMENTATION_SET
+        # self.transforms = Augmentations.AUGMENTATION_SET
 
     def __len__(self) -> int:
         return len(self.imgs)
@@ -27,6 +27,6 @@ class TaskDataset(Dataset):
             img = Image.open(img).convert("RGB")
         else:
             img = img.convert("RGB")
-        views = [t(img) for t in self.transforms]
+        views = [t(img) for t in Augmentations.AUGMENTATION_SET]
         return id_, img, views
         
