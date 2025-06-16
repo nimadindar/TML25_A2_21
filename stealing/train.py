@@ -1,6 +1,6 @@
 import torch
-import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 
 import os
 import csv
@@ -28,7 +28,7 @@ class StolenEncoder:
     def train(self, dataloader, model_idx):
 
         self.encoder = self.encoder.to(self.device)
-        criterion = L2Loss()
+        # criterion = L2Loss()
         optimizer = optim.Adam(self.encoder.parameters(), lr = self.lr)
 
         file_exists = os.path.exists(self.csv_file)
@@ -43,15 +43,19 @@ class StolenEncoder:
             running_loss = 0.0
             progress_bar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{self.num_epochs}", unit="batch")
 
-            for views, target in progress_bar:
+            for image, views, target in progress_bar:
+                image = image.to(self.device)
                 target = target.to(self.device).detach()                    # [B, D]
 
+                image_rep = self.encoder(image)
                 preds = [self.encoder(v.to(self.device)) for v in views]    # list of [B, D]
                 preds = torch.stack(preds, dim=0)                           # [4, B, D]
 
                 target_exp = target.unsqueeze(0).expand_as(preds)           # expand target to [4, B, D] for broadcast
 
-                loss = criterion(preds, target_exp)
+                loss_l1 = F.mse_loss(image_rep, target)
+                loss_l2 = F.mse_loss(preds, target_exp)
+                loss = loss_l1 + self.lambda_value * loss_l2
 
                 optimizer.zero_grad()
                 loss.backward()
