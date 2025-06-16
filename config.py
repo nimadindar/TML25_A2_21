@@ -16,8 +16,8 @@ class TrainingConfig:
     ENCODER_NAME = "cifar10_resnet20"
     MODEL_IDX = 1
     SEED = 1234
-    NUM_EPOCHS = 100
-    BATCH_SIZE = 256
+    NUM_EPOCHS = 1
+    BATCH_SIZE = 32
     NUM_AUGS = 4
     LR = 1e-3
     LAMBDA = 20

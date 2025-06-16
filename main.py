@@ -58,22 +58,28 @@ elif STEAL:
 
     dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
     subset = get_random_subset(dataset, subset_index=APIConfig.IDX, seed = TrainingConfig.SEED)
-
-    with open(f'./results/out{APIConfig.IDX}.pickle', 'rb') as handle:
-        out = pickle.load(handle)
+    
+    try:
+        with open(f'./results/out{APIConfig.IDX}.pickle', 'rb') as handle:
+            out = pickle.load(handle)
+    except FileNotFoundError:
+        print(f"Representation file for subset index {APIConfig.IDX} not found. Please run the API querying step first.")
+        exit(1)
 
     # To merge output representations with the subset of main dataset
     merged_dataset = MergedDataset(subset, out)
 
     dataloader = DataLoader(merged_dataset, batch_size=TrainingConfig.BATCH_SIZE)
 
-    # encoder = CNNencoder(TrainingConfig.ENCODER_NAME)
+    encoder = CNNencoder(TrainingConfig.ENCODER_NAME)
 
-    # stolen_encoder = StolenEncoder(
-    #     encoder, 
-    #     TrainingConfig.LR, 
-    #     TrainingConfig.NUM_EPOCHS, 
-    #     TrainingConfig.LAMBDA)
+    stolen_encoder = StolenEncoder(
+        encoder, 
+        TrainingConfig.LR, 
+        TrainingConfig.NUM_EPOCHS, 
+        TrainingConfig.LAMBDA)
 
-    # stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX)
+    print(f"Training the stolen encoder using subset id: {APIConfig.IDX}. The id for the model is {TrainingConfig.MODEL_IDX}.")
+    stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX)
+    print("Training model finished successfully!")
 

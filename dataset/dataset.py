@@ -1,4 +1,5 @@
 import torch
+import torchvision.transforms as T
 from torch.utils.data import Dataset
 
 from PIL import Image
@@ -23,13 +24,20 @@ class TaskDataset(Dataset):
     def __getitem__(self, index) -> List[torch.Tensor]:
         id_ = self.ids[index]
         img = self.imgs[index]
+
         if isinstance(img, str):
             img = Image.open(img).convert("RGB")
         else:
             img = img.convert("RGB")
+
+        img_tensor = T.Compose([
+            T.ToTensor(),
+            T.Normalize(mean=Augmentations.MEAN, std=Augmentations.STD)
+        ])(img)
+
         views = [t(img) for t in Augmentations.AUGMENTATION_SET]
-        return id_, img, views
-    
+        return id_, img_tensor, views
+
     
 class MergedDataset(Dataset):
     def __init__(self, subset, representations_dict):
