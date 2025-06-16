@@ -1,25 +1,30 @@
 import torch
 from torch.utils.data import Dataset
 
-from typing import Tuple
-
+from typing import Tuple, List
 
 class TaskDataset(Dataset):
-    def __init__(self, transform=None):
 
-        self.ids = []
-        self.imgs = []
-        self.labels = []
+    def __init__(
+            self,
+            api_embeddings: torch.Tensor,
+            base_transform,
+            num_augs: int = 4,):
+        
+        self.ids = []       
+        self.imgs = []     
+        self.labels = []         
 
-        self.transform = transform
+        self.api_embeddings = api_embeddings
+        self.base_transform = base_transform
+        self.num_augs = num_augs
 
-    def __getitem__(self, index) -> Tuple[int, torch.Tensor, int]:
-        id_ = self.ids[index]
+    def __len__(self) -> int:
+        return len(self.imgs)
+    
+    def __getitem__(self, index) -> List[torch.Tensor]:
         img = self.imgs[index]
-        if not self.transform is None:
-            img = self.transform(img)
-        label = self.labels[index]
-        return id_, img, label
-
-    def __len__(self):
-        return len(self.ids)
+        views = [self.base_transform(img) for _ in range(self.num_augs)]
+        target = self.api_embeddings[index]        
+        return views, target
+        
