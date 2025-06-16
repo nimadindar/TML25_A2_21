@@ -6,7 +6,7 @@ from encoders.cnn_encoder import CNNencoder
 from stealing.query_api import ModelStealer
 from stealing.train import StolenEncoder
 
-from config import APIConfig, TrainingConfig
+from config import APIConfig, TrainingConfig, Augmentations
 
 import numpy as np
 
@@ -19,13 +19,18 @@ torch.cuda.manual_seed_all(TrainingConfig.SEED)
 
 REQUEST_NEW_API = False
 STEAL = True
-
+QUERY = True
 
 if REQUEST_NEW_API:    
     model_stealer = ModelStealer(APIConfig.TOKEN)
     seed, port = model_stealer.request_new_api()
 
     print(f"New seed: {seed}, port: {port}.")
+
+
+elif QUERY:
+    dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
+    
 
 elif STEAL:
     current_seed = "32454959"
@@ -44,5 +49,5 @@ elif STEAL:
         TrainingConfig.NUM_EPOCHS, 
         TrainingConfig.LAMBDA)
 
-    stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX)
+    # stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX)
 

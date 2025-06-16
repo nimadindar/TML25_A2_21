@@ -30,7 +30,7 @@ class ModelStealer:
             print(f"Exception occurred: {e}")
             sys.exit(1)
 
-    def query_api(self, images, idx):
+    def query_api(self, images, images_idx, idx):
         if self.port is None:
             raise ValueError("API port not set. Call `request_new_api()` first.")
 
