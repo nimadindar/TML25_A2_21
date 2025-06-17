@@ -56,6 +56,10 @@ class ModelStealer:
             raise Exception(
                 f"Model stealing failed. Code: {response.status_code}, content: {response.json()}"
             )
+        
+    def submit_model(self, seed, path):
+        response = requests.post(self.base_url + "/stealing", files={"file": open(path, "rb")}, headers={"token": self.token, "seed": seed})
+        print(response.json())
 
     def _save_output(self, representations, image_ids, idx):
         file_path = f"./results/out{idx}.pickle"

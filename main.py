@@ -12,6 +12,8 @@ import numpy as np
 
 import torch
 from torch.utils.data import DataLoader
+import onnxruntime as ort
+
 
 import os
 import sys
@@ -23,10 +25,12 @@ torch.cuda.manual_seed_all(TrainingConfig.SEED)
 
 REQUEST_NEW_API = False
 QUERY = False
-STEAL = True
+STEAL = False
+SUBMIT = True
 
 
-if REQUEST_NEW_API:    
+if REQUEST_NEW_API:  
+
     model_stealer = ModelStealer(APIConfig.TOKEN)
     seed, port = model_stealer.request_new_api()
 
@@ -34,6 +38,7 @@ if REQUEST_NEW_API:
 
 
 elif QUERY:
+
     if os.path.exists(f"./results/out{APIConfig.IDX}"):
         print(f"Representation file already exists for the given subset ID: {APIConfig.IDX}. \
               If you have obtained a new port/seed remove the existing file and try again.")
@@ -54,7 +59,6 @@ elif QUERY:
 
 
 elif STEAL:
-
 
     dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
     subset = get_random_subset(dataset, subset_index=APIConfig.IDX, seed = TrainingConfig.SEED)
@@ -82,4 +86,36 @@ elif STEAL:
     print(f"Training the stolen encoder using subset id: {APIConfig.IDX}. The id for the model is {TrainingConfig.MODEL_IDX}.")
     stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX)
     print("Training model finished successfully!")
+
+elif SUBMIT:
+    
+    save_path = f'./results/saved_models/submission{APIConfig.IDX}'
+
+    encoder = CNNencoder(TrainingConfig.ENCODER_NAME)
+    encoder.load_state_dict(torch.load(f"./results/saved_models/stolen_model_{TrainingConfig.MODEL_IDX}.pth"))
+        
+    torch.onnx.export(
+        encoder,
+        torch.randn(1,3,32,32),
+        save_path,
+        export_params=True,
+        input_names=["x"],
+    )
+
+    with open(save_path, "rb") as f:
+        encoder = f.read()
+    try:
+        stolen_model = ort.InferenceSession(encoder)
+    except Exception as e:
+        raise Exception(f"Invalid model, {e=}")
+    try:
+        out = stolen_model.run(
+            None, {"x": np.random.randn(1, 3, 32, 32).astype(np.float32)}
+        )[0][0]
+    except Exception as e:
+        raise Exception(f"Some issue with the input, {e=}")
+    assert out.shape == (1024,), "Invalid output shape"
+
+    model_stealer = ModelStealer(APIConfig.TOKEN)
+    model_stealer.submit_model(APIConfig.SEED, save_path)
 

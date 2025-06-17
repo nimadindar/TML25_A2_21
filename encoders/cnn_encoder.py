@@ -29,8 +29,8 @@ class CNNencoder(nn.Module):
         self.avgpool_output = output
 
     def forward(self, x):
-        if x.dim() != 4 or x.shape[1:] != (3, 32, 32):
-            raise ValueError(f"Expected input shape [batch_size, 3, 32, 32], got {x.shape}")
+        # if x.dim() != 4 or x.shape[1:] != (3, 32, 32):
+        #     raise ValueError(f"Expected input shape [batch_size, 3, 32, 32], got {x.shape}")
 
         _ = self.encoder(x)
 
