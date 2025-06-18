@@ -7,25 +7,25 @@ class APIConfig:
     load_dotenv()
     BASE_URL = "http://34.122.51.94:9090"
     TOKEN = os.getenv("TOKEN")
-    IDX = 1 # This is used to keep track of the sequences of images queried through API.
-    SEED = "32454959"
+    IDX = 0 # This is used to keep track of the sequences of images queried through API.
+    SEED = "69699351"
     PORT = "9478"
 
 
 class TrainingConfig:
     ENCODER_NAME = "cifar10_resnet20"
-    MODEL_IDX = 1
+    MODEL_IDX = 0
     SEED = 1234
-    NUM_EPOCHS = 1
+    NUM_EPOCHS = 30
     BATCH_SIZE = 32
-    NUM_AUGS = 4
+    # NUM_AUGS = 4
     LR = 1e-3
     LAMBDA = 20
     
 class Augmentations:
 
-    MEAN = [0.485, 0.456, 0.406]
-    STD = [0.229, 0.224, 0.225]
+    MEAN = [0.2980, 0.2962, 0.2987]
+    STD = [0.2886, 0.2875, 0.2889]
 
     AUG_FLIP = T.Compose([
         T.RandomHorizontalFlip(p=1.0),

@@ -39,7 +39,7 @@ if REQUEST_NEW_API:
 
 elif QUERY:
 
-    if os.path.exists(f"./results/out{APIConfig.IDX}"):
+    if os.path.exists(f"./results/out{APIConfig.IDX}.pickle"):
         print(f"Representation file already exists for the given subset ID: {APIConfig.IDX}. \
               If you have obtained a new port/seed remove the existing file and try again.")
         sys.exit(0)
@@ -61,19 +61,34 @@ elif QUERY:
 elif STEAL:
 
     dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
-    subset = get_random_subset(dataset, subset_index=APIConfig.IDX, seed = TrainingConfig.SEED)
+    subset = get_random_subset(dataset, subset_index=APIConfig.IDX, subset_size=3000, seed = TrainingConfig.SEED)
     
-    try:
-        with open(f'./results/out{APIConfig.IDX}.pickle', 'rb') as handle:
-            out = pickle.load(handle)
-    except FileNotFoundError:
-        print(f"Representation file for subset index {APIConfig.IDX} not found. Please run the API querying step first.")
-        exit(1)
+    # try:
+    #     with open(f'./results/out{APIConfig.IDX}.pickle', 'rb') as handle:
+    #         out = pickle.load(handle)
+    # except FileNotFoundError:
+    #     print(f"Representation file for subset index {APIConfig.IDX} not found. Please run the API querying step first.")
+    #     exit(1)
 
-    # To merge output representations with the subset of main dataset
+    pickle_files = [
+    'out0.pickle',
+    'out1.pickle',
+    'out2.pickle',
+    # 'out3.pickle',
+    # 'out4.pickle'
+    ]
+
+    out = {'ids': [], 'representations': []}
+
+    for file in pickle_files:
+        with open('./results/'+file, 'rb') as f:
+            data = pickle.load(f)
+            out['ids'].extend(data['ids'])
+            out['representations'].extend(data['representations'])
     merged_dataset = MergedDataset(subset, out)
 
-    dataloader = DataLoader(merged_dataset, batch_size=TrainingConfig.BATCH_SIZE)
+
+    dataloader = DataLoader(merged_dataset, batch_size=TrainingConfig.BATCH_SIZE, shuffle=True)
 
     encoder = CNNencoder(TrainingConfig.ENCODER_NAME)
 
@@ -82,6 +97,11 @@ elif STEAL:
         TrainingConfig.LR, 
         TrainingConfig.NUM_EPOCHS, 
         TrainingConfig.LAMBDA)
+
+    if os.path.exists(f'./results/saved_model_{TrainingConfig.MODEL_IDX}.pth'):
+        print(f"The model with ID: {TrainingConfig.MODEL_IDX} already exists. Loading the model to continue training...")
+        encoder.load_state_dict(torch.load(f"./results/saved_models/stolen_model_{TrainingConfig.MODEL_IDX}.pth")) 
+        stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX + 1)
 
     print(f"Training the stolen encoder using subset id: {APIConfig.IDX}. The id for the model is {TrainingConfig.MODEL_IDX}.")
     stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX)

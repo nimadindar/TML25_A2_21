@@ -10,7 +10,7 @@ class CNNencoder(nn.Module):
         self.pretrained = pretrained
         self.avgpool_output = None
 
-        available_models = torch.hub.list("chenyaofo/pytorch-cifar-models", force_reload=True)
+        available_models = torch.hub.list("chenyaofo/pytorch-cifar-models", force_reload=False)
         if self.model_name not in available_models:
             raise ValueError(f"Invalid model_name: '{model_name}'. Available models are: {available_models}")
 
