@@ -25,8 +25,8 @@ torch.cuda.manual_seed_all(TrainingConfig.SEED)
 
 REQUEST_NEW_API = False
 QUERY = False
-STEAL = False
-SUBMIT = True
+STEAL = True
+SUBMIT = False
 
 
 if REQUEST_NEW_API:  

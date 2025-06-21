@@ -59,6 +59,11 @@ class StolenEncoder:
 
                 optimizer.zero_grad()
                 loss.backward()
+
+                if getattr(self.encoder, "use_centering", True): 
+                    with torch.no_grad():
+                        self.encoder.update_center(image_rep)
+
                 optimizer.step()
 
                 running_loss += loss.item()
@@ -72,7 +77,9 @@ class StolenEncoder:
 
         torch.save(self.encoder.state_dict(), Path(self.save_dir) / f"stolen_model_{model_idx}.pth")
 
-
+    def _softmax_with_temperature(self, logits, T=0.07):
+        return F.softmax(logits / T, dim=1)
+    
     def _write_to_csv(self, index, epoch, epoch_loss):
         with open(self.csv_file, mode='a', newline='') as f:
             writer = csv.writer(f)
