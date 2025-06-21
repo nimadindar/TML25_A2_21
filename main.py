@@ -61,7 +61,7 @@ elif QUERY:
 elif STEAL:
 
     dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
-    subset = get_random_subset(dataset, subset_index=APIConfig.IDX, subset_size=3000, seed = TrainingConfig.SEED)
+    subset = get_random_subset(dataset, subset_index=APIConfig.IDX, subset_size=4000, seed = TrainingConfig.SEED)
     
     # try:
     #     with open(f'./results/out{APIConfig.IDX}.pickle', 'rb') as handle:
@@ -74,8 +74,10 @@ elif STEAL:
     'out0.pickle',
     'out1.pickle',
     'out2.pickle',
-    # 'out3.pickle',
-    # 'out4.pickle'
+    'out3.pickle',
+    # 'out4.pickle',
+    # 'out5.pickle',
+    # 'out6.pickle'
     ]
 
     out = {'ids': [], 'representations': []}
@@ -109,7 +111,7 @@ elif STEAL:
 
 elif SUBMIT:
     
-    save_path = f'./results/saved_models/submission{APIConfig.IDX}'
+    save_path = f'./results/saved_models/submission{APIConfig.SUB_IDX}'
 
     encoder = CNNencoder(TrainingConfig.ENCODER_NAME)
     encoder.load_state_dict(torch.load(f"./results/saved_models/stolen_model_{TrainingConfig.MODEL_IDX}.pth"))

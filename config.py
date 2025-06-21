@@ -8,19 +8,20 @@ class APIConfig:
     BASE_URL = "http://34.122.51.94:9090"
     TOKEN = os.getenv("TOKEN")
     IDX = 0 # This is used to keep track of the sequences of images queried through API.
+    SUB_IDX = 5
     SEED = "69699351"
     PORT = "9478"
 
 
 class TrainingConfig:
     ENCODER_NAME = "cifar10_resnet20"
-    MODEL_IDX = 0
+    MODEL_IDX = 5
     SEED = 1234
     NUM_EPOCHS = 30
     BATCH_SIZE = 32
     # NUM_AUGS = 4
     LR = 1e-3
-    LAMBDA = 20
+    LAMBDA = 30
     
 class Augmentations:
 
