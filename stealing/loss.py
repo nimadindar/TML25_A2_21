@@ -9,27 +9,24 @@ class L2Loss(torch.nn.Module):
         return torch.norm(x - y, p=2, dim=1).mean()
 
 
-
-def contrastive_loss(query, positive, negatives=None, temperature=0.07):
+def contrastive_loss(query, positive, negatives, temperature=0.07):
     """
-    query: [B, D] - encoder(image)
-    positive: [B, D] - target (API rep)
-    negatives: Optional [N, D] - other negatives
+    query: [M, D] - encoder outputs (M = 5*B for original + 4 views)
+    positive: [M, D] - target (API representations)
+    negatives: [M, N, D] - negative samples for each query (N = B-1)
+    temperature: scalar
     """
-    query = F.normalize(query, dim=1, eps=1e-8)
-    positive = F.normalize(positive, dim=1, eps=1e-8)
+    if negatives is None:
+        raise ValueError("Contrastive loss requires negative samples")
 
-    pos_sim = torch.sum(query * positive, dim=1, keepdim=True)  # [B, 1]
+    query = F.normalize(query, dim=1, eps=1e-8)  # [M, D]
+    positive = F.normalize(positive, dim=1, eps=1e-8)  # [M, D]
+    negatives = F.normalize(negatives, dim=2, eps=1e-8)  # [M, N, D]
 
-    if negatives is not None:
-        negatives = F.normalize(negatives, dim=1)
-        neg_sim = torch.matmul(query, negatives.T)              # [B, N]
-        logits = torch.cat([pos_sim, neg_sim], dim=1)           # [B, 1+N]
-    else:
-        raise ValueError("To correctly calculate contrastive loss, negative samples should be provided.")
-
+    pos_sim = torch.sum(query * positive, dim=1, keepdim=True)  # [M, 1]
+    neg_sim = torch.bmm(query.unsqueeze(1), negatives.transpose(1, 2)).squeeze(1)  # [M, N]
+    logits = torch.cat([pos_sim, neg_sim], dim=1)  # [M, 1+N]
     logits /= temperature
 
-    labels = torch.zeros(query.size(0), dtype=torch.long).to(query.device)  # positives are at index 0
-
+    labels = torch.zeros(query.size(0), dtype=torch.long).to(query.device)  # Positives at index 0
     return F.cross_entropy(logits, labels)

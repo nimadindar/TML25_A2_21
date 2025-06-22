@@ -97,19 +97,20 @@ class StolenEncoder:
                 image = image.to(self.device)
                 target = target.to(self.device).detach()
 
-                image_rep = self.encoder(image)  # [B, D]
-                view_reps = [self.encoder(v.to(self.device)) for v in views]  # list of [B, D]
-                view_reps = torch.stack(view_reps, dim=0).permute(1, 0, 2)  # [B, 4, D]
+                B = image.shape[0]
+                
+                image_rep = self.encoder(image)  # [B, 1024]
+                view_reps = [self.encoder(v.to(self.device)) for v in views]  # list of [B, 1024]
+                view_reps = torch.stack(view_reps, dim=0).permute(1, 0, 2)  # [B, 4, 1024]
 
-                all_queries = torch.cat([image_rep.unsqueeze(1), view_reps], dim=1)  # [B, 5, D]
-                all_queries = all_queries.view(-1, image_rep.size(1))  # [5*B, D]
-                targets_expanded = target.unsqueeze(1).expand(-1, 5, -1).reshape(-1, target.size(1))  # [5*B, D]
+                all_queries = torch.cat([image_rep.unsqueeze(1), view_reps], dim=1)  # [B, 5, 1024]
+                all_queries = all_queries.view(-1, image_rep.size(1))  # [5*B, 1024]
+                targets_expanded = target.unsqueeze(1).expand(-1, 5, -1).reshape(-1, target.size(1))  # [5*B, 1024]
 
                 # Construct negatives: for each image, exclude its own target
-                B = target.size(0)
                 neg_indices = [torch.tensor([j for j in range(B) if j != i], device=target.device) for i in range(B)]
                 neg_indices = torch.stack(neg_indices).repeat(5, 1)  # [5*B, B-1]
-                batch_negatives = target[neg_indices]  # [5*B, B-1, D]
+                batch_negatives = target[neg_indices]  # [5*B, B-1, 1024]
 
                 loss = contrastive_loss(all_queries, targets_expanded, batch_negatives)
 

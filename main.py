@@ -100,13 +100,8 @@ elif STEAL:
         TrainingConfig.NUM_EPOCHS, 
         TrainingConfig.LAMBDA)
 
-    if os.path.exists(f'./results/saved_model_{TrainingConfig.MODEL_IDX}.pth'):
-        print(f"The model with ID: {TrainingConfig.MODEL_IDX} already exists. Loading the model to continue training...")
-        encoder.load_state_dict(torch.load(f"./results/saved_models/stolen_model_{TrainingConfig.MODEL_IDX}.pth")) 
-        stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX + 1)
-
     print(f"Training the stolen encoder using subset id: {APIConfig.IDX}. The id for the model is {TrainingConfig.MODEL_IDX}.")
-    stolen_encoder.train(dataloader, TrainingConfig.MODEL_IDX)
+    stolen_encoder.train_contrastive(dataloader, TrainingConfig.MODEL_IDX)
     print("Training model finished successfully!")
 
 elif SUBMIT:
