@@ -8,7 +8,7 @@ from tqdm import tqdm
 from pathlib import Path
 
 
-from stealing.loss import L2Loss
+from stealing.loss import contrastive_loss
 
 class StolenEncoder:
     def __init__(self, encoder, lr, num_epochs, lambda_value):
@@ -25,7 +25,7 @@ class StolenEncoder:
         if not os.path.exists(self.save_dir):
             os.mkdir(self.save_dir)
 
-    def train(self, dataloader, model_idx):
+    def train_l2(self, dataloader, model_idx):
 
         self.encoder = self.encoder.to(self.device)
         # criterion = L2Loss()
@@ -68,6 +68,59 @@ class StolenEncoder:
 
                 running_loss += loss.item()
 
+                progress_bar.set_postfix(loss=running_loss / (progress_bar.n + 1))
+
+            epoch_loss = running_loss / len(dataloader)
+
+            print(f"Epoch [{epoch+1}/{self.num_epochs}], Loss: {epoch_loss:.4f}")
+            self._write_to_csv(model_idx, epoch, epoch_loss)
+
+        torch.save(self.encoder.state_dict(), Path(self.save_dir) / f"stolen_model_{model_idx}.pth")
+
+    def train_contrastive(self, dataloader, model_idx):
+        self.encoder = self.encoder.to(self.device)
+        optimizer = optim.Adam(self.encoder.parameters(), lr = self.lr)
+
+        file_exists = os.path.exists(self.csv_file)
+        with open(self.csv_file, mode='a', newline='') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(['model_id', 'epoch', 'loss'])
+
+        self.encoder.train()
+        
+        for epoch in range(self.num_epochs):
+            running_loss = 0.0
+            progress_bar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{self.num_epochs}", unit="batch")
+
+            for image, views, target in progress_bar:
+                image = image.to(self.device)
+                target = target.to(self.device).detach()
+
+                image_rep = self.encoder(image)  # [B, D]
+                view_reps = [self.encoder(v.to(self.device)) for v in views]  # list of [B, D]
+                view_reps = torch.stack(view_reps, dim=0).permute(1, 0, 2)  # [B, 4, D]
+
+                all_queries = torch.cat([image_rep.unsqueeze(1), view_reps], dim=1)  # [B, 5, D]
+                all_queries = all_queries.view(-1, image_rep.size(1))  # [5*B, D]
+                targets_expanded = target.unsqueeze(1).expand(-1, 5, -1).reshape(-1, target.size(1))  # [5*B, D]
+
+                # Construct negatives: for each image, exclude its own target
+                B = target.size(0)
+                neg_indices = [torch.tensor([j for j in range(B) if j != i], device=target.device) for i in range(B)]
+                neg_indices = torch.stack(neg_indices).repeat(5, 1)  # [5*B, B-1]
+                batch_negatives = target[neg_indices]  # [5*B, B-1, D]
+
+                loss = contrastive_loss(all_queries, targets_expanded, batch_negatives)
+
+                optimizer.zero_grad()
+                loss.backward()
+                if getattr(self.encoder, "use_centering", True):
+                    with torch.no_grad():
+                        self.encoder.update_center(image_rep)
+                optimizer.step()
+
+                running_loss += loss.item()
                 progress_bar.set_postfix(loss=running_loss / (progress_bar.n + 1))
 
             epoch_loss = running_loss / len(dataloader)
