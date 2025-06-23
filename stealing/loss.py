@@ -9,24 +9,15 @@ class L2Loss(torch.nn.Module):
         return torch.norm(x - y, p=2, dim=1).mean()
 
 
-def contrastive_loss(query, positive, negatives, temperature=0.07):
-    """
-    query: [M, D] - encoder outputs (M = 5*B for original + 4 views)
-    positive: [M, D] - target (API representations)
-    negatives: [M, N, D] - negative samples for each query (N = B-1)
-    temperature: scalar
-    """
-    if negatives is None:
-        raise ValueError("Contrastive loss requires negative samples")
+class ContrastiveLoss(torch.nn.Module):
 
-    query = F.normalize(query, dim=1, eps=1e-8)  # [M, D]
-    positive = F.normalize(positive, dim=1, eps=1e-8)  # [M, D]
-    negatives = F.normalize(negatives, dim=2, eps=1e-8)  # [M, N, D]
+    def __init__(self, margin=1.5):
+        super(ContrastiveLoss, self).__init__()
+        self.margin = margin
 
-    pos_sim = torch.sum(query * positive, dim=1, keepdim=True)  # [M, 1]
-    neg_sim = torch.bmm(query.unsqueeze(1), negatives.transpose(1, 2)).squeeze(1)  # [M, N]
-    logits = torch.cat([pos_sim, neg_sim], dim=1)  # [M, 1+N]
-    logits /= temperature
-
-    labels = torch.zeros(query.size(0), dtype=torch.long).to(query.device)  # Positives at index 0
-    return F.cross_entropy(logits, labels)
+    def forward(self, output1, output2, label):
+        euclidean_distance = F.pairwise_distance(output1, output2)
+        pos = (1-label) * torch.pow(euclidean_distance, 2)
+        neg = (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2)
+        loss_contrastive = torch.mean( pos + neg )
+        return loss_contrastive

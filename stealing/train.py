@@ -8,7 +8,7 @@ from tqdm import tqdm
 from pathlib import Path
 
 
-from stealing.loss import contrastive_loss
+from stealing.loss import ContrastiveLoss
 
 class StolenEncoder:
     def __init__(self, encoder, lr, num_epochs, lambda_value):
@@ -80,6 +80,7 @@ class StolenEncoder:
     def train_contrastive(self, dataloader, model_idx):
         self.encoder = self.encoder.to(self.device)
         optimizer = optim.Adam(self.encoder.parameters(), lr = self.lr)
+        criterion = ContrastiveLoss(margin=1.5)
 
         file_exists = os.path.exists(self.csv_file)
         with open(self.csv_file, mode='a', newline='') as f:
@@ -96,23 +97,19 @@ class StolenEncoder:
             for image, views, target in progress_bar:
                 image = image.to(self.device)
                 target = target.to(self.device).detach()
+                 
+                view_reps = torch.stack([self.encoder(v.to(self.device)) for v in views], dim=0)  # [4, 32, 1024]
+                view_reps = view_reps.view(-1, view_reps.shape[-1])  # [128, 1024]
 
-                B = image.shape[0]
-                
-                image_rep = self.encoder(image)  # [B, 1024]
-                view_reps = [self.encoder(v.to(self.device)) for v in views]  # list of [B, 1024]
-                view_reps = torch.stack(view_reps, dim=0).permute(1, 0, 2)  # [B, 4, 1024]
+                image_rep = self.encoder(image)                     # [32, 1024]
+                image_rep = image_rep.unsqueeze(0).expand(4, -1, -1)  # [4, 32, 1024]
+                image_rep = image_rep.contiguous().view(-1, image_rep.shape[-1])  # [128, 1024]
 
-                all_queries = torch.cat([image_rep.unsqueeze(1), view_reps], dim=1)  # [B, 5, 1024]
-                all_queries = all_queries.view(-1, image_rep.size(1))  # [5*B, 1024]
-                targets_expanded = target.unsqueeze(1).expand(-1, 5, -1).reshape(-1, target.size(1))  # [5*B, 1024]
+                target_rep = target.unsqueeze(0).expand(4, -1, -1)   # [4, 32, 1024]
+                target_rep = target_rep.contiguous().view(-1, target_rep.shape[-1])  # [128, 1024]
 
-                # Construct negatives: for each image, exclude its own target
-                neg_indices = [torch.tensor([j for j in range(B) if j != i], device=target.device) for i in range(B)]
-                neg_indices = torch.stack(neg_indices).repeat(5, 1)  # [5*B, B-1]
-                batch_negatives = target[neg_indices]  # [5*B, B-1, 1024]
-
-                loss = contrastive_loss(all_queries, targets_expanded, batch_negatives)
+                label = torch.zeros(view_reps.shape[0], device=self.device)  # All positives
+                loss = criterion(image_rep, view_reps, label)
 
                 optimizer.zero_grad()
                 loss.backward()
