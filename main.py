@@ -25,8 +25,8 @@ torch.cuda.manual_seed_all(TrainingConfig.SEED)
 
 REQUEST_NEW_API = False
 QUERY = False
-STEAL = False
-SUBMIT = True
+STEAL = True
+SUBMIT = False
 
 
 if REQUEST_NEW_API:  
@@ -61,7 +61,7 @@ elif QUERY:
 elif STEAL:
 
     dataset = torch.load("./data/ModelStealingPub.pt", weights_only=False)
-    subset = get_random_subset(dataset, subset_index=APIConfig.IDX, subset_size=4000, seed = TrainingConfig.SEED)
+    subset = get_random_subset(dataset, subset_index=APIConfig.IDX, subset_size=1000, seed = TrainingConfig.SEED)
     
     # try:
     #     with open(f'./results/out{APIConfig.IDX}.pickle', 'rb') as handle:
@@ -72,9 +72,9 @@ elif STEAL:
 
     pickle_files = [
     'out0.pickle',
-    'out1.pickle',
-    'out2.pickle',
-    'out3.pickle',
+    #'out1.pickle',
+    #'out2.pickle',
+    #'out3.pickle',
     # 'out4.pickle',
     # 'out5.pickle',
     # 'out6.pickle'
