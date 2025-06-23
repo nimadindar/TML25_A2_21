@@ -7,13 +7,13 @@ class APIConfig:
     BASE_URL = "http://34.122.51.94:9090"
     TOKEN = "34811541"
     IDX = 0
-    SUB_IDX = 6
-    SEED = "59427503"
+    SUB_IDX = 10
+    SEED = "8981158"
     PORT = "9648"
 
 class TrainingConfig:
     ENCODER_NAME = "resnet18"
-    MODEL_IDX = 6
+    MODEL_IDX = 10
     SEED = 1234
     NUM_EPOCHS = 15
     BATCH_SIZE = 64
