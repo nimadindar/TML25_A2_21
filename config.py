@@ -1,55 +1,38 @@
 import os
 from dotenv import load_dotenv
-    
 import torchvision.transforms as T
 
 class APIConfig:
     load_dotenv()
     BASE_URL = "http://34.122.51.94:9090"
-    TOKEN = os.getenv("TOKEN")
-    IDX = 0 # This is used to keep track of the sequences of images queried through API.
-    SUB_IDX = 8
-    SEED = "69699351"
-    PORT = "9478"
-
+    TOKEN = "34811541"
+    IDX = 0
+    SUB_IDX = 6
+    SEED = "59427503"
+    PORT = "9648"
 
 class TrainingConfig:
-    ENCODER_NAME = "cifar10_resnet20"
-    MODEL_IDX = 8
+    ENCODER_NAME = "resnet18"
+    MODEL_IDX = 6
     SEED = 1234
-    NUM_EPOCHS = 30
-    BATCH_SIZE = 32
-    # NUM_AUGS = 4
-    LR = 1e-3
-    LAMBDA = 15
-    
-class Augmentations:
+    NUM_EPOCHS = 15
+    BATCH_SIZE = 64
+    VAL_BATCH_SIZE = 128
+    LR = 3e-4
+    LAMBDA_KD = 1.0
+    LAMBDA_SIAM = 0.5
 
+class Augmentations:
     MEAN = [0.2980, 0.2962, 0.2987]
     STD = [0.2886, 0.2875, 0.2889]
 
-    AUG_FLIP = T.Compose([
-        T.RandomHorizontalFlip(p=1.0),
+    AUG_TFM = T.Compose([
+        T.RandomResizedCrop(32, scale=(0.7, 1.0)),
+        T.RandomHorizontalFlip(),
+        T.RandomApply([T.ColorJitter(0.4, 0.4, 0.2, 0.1)], p=0.8),
+        T.RandomGrayscale(p=0.2),
         T.ToTensor(),
         T.Normalize(mean=MEAN, std=STD),
     ])
 
-    AUG_JITTER = T.Compose([
-        T.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.1),
-        T.ToTensor(),
-        T.Normalize(mean=MEAN, std=STD),
-    ])
-
-    AUG_GRAYSCALE = T.Compose([
-        T.RandomGrayscale(p=1.0),
-        T.ToTensor(),
-        T.Normalize(mean=MEAN, std=STD),
-    ])
-
-    AUG_ROTATE = T.Compose([
-        T.RandomRotation(degrees=15),
-        T.ToTensor(),
-        T.Normalize(mean=MEAN, std=STD),
-    ])
-
-    AUGMENTATION_SET = [AUG_FLIP, AUG_JITTER, AUG_GRAYSCALE, AUG_ROTATE]
+    AUGMENTATION_SET = [AUG_TFM] * 4
