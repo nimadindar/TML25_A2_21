@@ -15,7 +15,7 @@ class TrainingConfig:
     BACKBONE_TYPE = "resnet18"
     EXPERIMENT_ID = 15
     SEED = 1234
-    TRAINING_CYCLES = 15
+    epochs = 15
     TRAIN_BATCH_SIZE = 64
     EVAL_BATCH_SIZE = 128
     LEARNING_RATE = 3e-4
