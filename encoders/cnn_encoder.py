@@ -3,9 +3,9 @@ import torch.nn as nn
 from torchvision import models
 
 class StudentEncoder(nn.Module):
-    def __init__(self, model_name, output_dim=1024):
+    def __init__(self, architecture_type, output_dim=1024):
         super().__init__()
-        if model_name != "resnet18":
+        if architecture_type != "resnet18":
             raise ValueError("Only resnet18 is supported for this implementation.")
         
         backbone = models.resnet18(weights=None)

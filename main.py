@@ -21,8 +21,8 @@ torch.cuda.manual_seed_all(TrainingConfig.SEED)
 
 REQUEST_NEW_API = False
 QUERY = False
-STEAL = False
-SUBMIT = True
+STEAL = True
+SUBMIT = False
 
 if REQUEST_NEW_API:  
     model_stealer = ModelStealer(APIConfig.TOKEN)
@@ -53,9 +53,9 @@ elif STEAL:
     
     pickle_files = [
         'out0.pickle',
-        #'out1.pickle',
-        #'out2.pickle',
-        #'out3.pickle',
+        'out1.pickle',
+        'out2.pickle',
+        'out3.pickle',
     ]
 
     out = {'ids': [], 'representations': []}
@@ -77,32 +77,32 @@ elif STEAL:
     train_dataset = MergedDataset(train_subset, train_out)
     val_dataset = MergedDataset(val_subset, val_out)
     
-    train_loader = DataLoader(train_dataset, batch_size=TrainingConfig.BATCH_SIZE, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=TrainingConfig.VAL_BATCH_SIZE, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=TrainingConfig.TRAIN_BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=TrainingConfig.EVAL_BATCH_SIZE, shuffle=False)
 
-    encoder = StudentEncoder(TrainingConfig.ENCODER_NAME)
+    encoder = StudentEncoder(TrainingConfig.BACKBONE_TYPE)
 
     stolen_encoder = StolenEncoder(
         encoder, 
-        TrainingConfig.LR, 
-        TrainingConfig.NUM_EPOCHS, 
-        TrainingConfig.LAMBDA_KD,
-        TrainingConfig.LAMBDA_SIAM
+        TrainingConfig.LEARNING_RATE, 
+        TrainingConfig.TRAINING_CYCLES, 
+        TrainingConfig.DISTILLATION_WEIGHT,
+        TrainingConfig.INVARIANCE_WEIGHT
     )
 
-    if os.path.exists(f'./results/saved_models/stolen_model_{TrainingConfig.MODEL_IDX}.pth'):
-        print(f"The model with ID: {TrainingConfig.MODEL_IDX} already exists. Loading the model to continue training...")
-        encoder.load_state_dict(torch.load(f"./results/saved_models/stolen_model_{TrainingConfig.MODEL_IDX}.pth")) 
-        stolen_encoder.train(train_loader, val_loader, TrainingConfig.MODEL_IDX + 1)
+    if os.path.exists(f'./results/saved_models/stolen_model_{TrainingConfig.EXPERIMENT_ID}.pth'):
+        print(f"The model with ID: {TrainingConfig.EXPERIMENT_ID} already exists. Loading the model to continue training...")
+        encoder.load_state_dict(torch.load(f"./results/saved_models/stolen_model_{TrainingConfig.EXPERIMENT_ID}.pth")) 
+        stolen_encoder.train(train_loader, val_loader, TrainingConfig.EXPERIMENT_ID + 1)
 
-    print(f"Training the stolen encoder using subset id: {APIConfig.IDX}. The id for the model is {TrainingConfig.MODEL_IDX}.")
-    stolen_encoder.train(train_loader, val_loader, TrainingConfig.MODEL_IDX)
+    print(f"Training the stolen encoder using subset id: {APIConfig.IDX}. The id for the model is {TrainingConfig.EXPERIMENT_ID}.")
+    stolen_encoder.train(train_loader, val_loader, TrainingConfig.EXPERIMENT_ID)
     print("Training model finished successfully!")
 
 elif SUBMIT:
     save_path = f'./results/saved_models/submission{APIConfig.SUB_IDX}'
-    encoder = StudentEncoder(TrainingConfig.ENCODER_NAME)
-    encoder.load_state_dict(torch.load(f"./results/saved_models/stolen_model_{TrainingConfig.MODEL_IDX}.pth"))
+    encoder = StudentEncoder(TrainingConfig.BACKBONE_TYPE)
+    encoder.load_state_dict(torch.load(f"./results/saved_models/stolen_model_{TrainingConfig.EXPERIMENT_ID}.pth", map_location=torch.device('cpu')))
         
     torch.onnx.export(
         encoder,
