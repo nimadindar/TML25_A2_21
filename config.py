@@ -8,7 +8,7 @@ class APIConfig:
     TOKEN = "34811541"
     IDX = 0
     SUB_IDX = 10
-    SEED = "8981158"
+    SEED = "66577954"
     PORT = "9648"
 
 class TrainingConfig:
@@ -27,12 +27,15 @@ class Augmentations:
     STD = [0.2886, 0.2875, 0.2889]
 
     AUG_TFM = T.Compose([
-        T.RandomResizedCrop(32, scale=(0.7, 1.0)),
-        T.RandomHorizontalFlip(),
-        T.RandomApply([T.ColorJitter(0.4, 0.4, 0.2, 0.1)], p=0.8),
-        T.RandomGrayscale(p=0.2),
-        T.ToTensor(),
-        T.Normalize(mean=MEAN, std=STD),
+    T.RandomResizedCrop(32, scale=(0.7, 1.0)),
+    T.RandomHorizontalFlip(),
+    T.RandomRotation(degrees=30),
+    T.RandomAffine(degrees=0, translate=(0.1, 0.1), shear=10),
+    T.RandomApply([T.ColorJitter(0.5, 0.5, 0.3, 0.15)], p=0.8),
+    T.RandomGrayscale(p=0.2),
+    T.ToTensor(),
+    T.Normalize(mean=MEAN, std=STD),
+    T.RandomErasing(p=0.5, scale=(0.02, 0.1)),
     ])
 
     AUGMENTATION_SET = [AUG_TFM] * 4
