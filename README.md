@@ -4,33 +4,32 @@
 
 This project implements a Model Stealing Attack to replicate a black-box ResNet-based encoder protected by B4B defense, which adds noise to API output representations. The goal is to minimize the L2 distance between a student model’s 1024-dimensional outputs and the target encoder’s on a private test set, evaluated via a remote server. Using `ModelStealingPub.pt` and API-queried representations (`out0.pickle`,...), five methods were tested, achieving a best L2 score of 5.46226692199707.
 
-## Implemented Methods
+### Implemented Methods
 
-Five methods were tested to steal the B4B-protected encoder:
+Four methods were tested to steal the B4B-protected encoder, with various parameters tried and the best L2 score reported for each:
 
 1. **Pretrained ResNet20**:
-   - **Rationale**: Used pretrained ResNet20 to leverage CIFAR-10 features, aiming to align with noisy target outputs.
-   - **Implementation**: Set `BACKBONE_TYPE="resnet20"` in `cnn_encoder.py`, fine-tuned with MSE loss on 4000 images (4 API queries).
-   - **Outcome**: L2 score ~6.47, limited by pretrained weight misalignment with B4B noise.
+   - **Rationale**: Leveraged pretrained ResNet20 on CIFAR-10 to align with noisy target outputs, aiming to reduce training time.
+   - **Implementation**: Set `BACKBONE_TYPE="resnet20"` in `cnn_encoder.py`, fine-tuned with KD loss (`DISTILLATION_WEIGHT=1.0`) on 4000 images (4 API queries of 1000 images each) from `data/ModelStealingPub.pt`.
+   - **Outcome**: Achieved L2 score ~6.47, limited by pretrained weights misaligned with B4B-noised representations.
    - **Parameters**: `LEARNING_RATE=1e-3`, `epochs=30`, `TRAIN_BATCH_SIZE=32`.
 
-2. **ResNet20 Tuning**:
-   - **Rationale**: Tuned parameters and augmentations to improve ResNet20’s robustness to B4B noise.
-   - **Implementation**: Varied `LEARNING_RATE=[1e-3, 5e-4, 1e-4]`, `epochs=[10, 15, 20]`, tried different augmentation methods.
-   - **Outcome**: No improvement beyond 6.47, due to ResNet20’s limited capacity.
-   - **Parameters**: Tested multiple learning rates, augmentations.
-
-3. **ResNet18 with Modified Inputs**:
-   - **Rationale**: Adopted ResNet18, modified for 3x32x32 inputs, to counter B4B noise with higher capacity.
-   - **Implementation**: Used `BACKBONE_TYPE="resnet18"`, adjusted `conv1` to 3x3 kernel. Trained on 1000 images (750/250 split) with (`DISTILLATION_WEIGHT=1.0`) and (`INVARIANCE_WEIGHT=0.5`).
-   - **Outcome**: Best L2 score ~5.46.
+2. **ResNet18 with Modified Inputs**:
+   - **Rationale**: Adopted higher-capacity ResNet18, modified for 3x32x32 inputs, to better capture target representations despite B4B noise.
+   - **Implementation**: Used `BACKBONE_TYPE="resnet18"` in `cnn_encoder.py`, adjusted `conv1` to 3x3 kernel, removed max pooling, added linear head (`nn.Linear(512, 1024)`). Trained on 1000 images (750/250 split, 1 API query) with KD (`DISTILLATION_WEIGHT=1.0`) and Siamese loss (`INVARIANCE_WEIGHT=0.5`).
+   - **Outcome**: Best L2 score ~5.46, due to ResNet18’s capacity and Siamese loss robustness.
    - **Parameters**: `LEARNING_RATE=3e-4`, `epochs=15`, `TRAIN_BATCH_SIZE=64`.
 
+3. **Changed Mean and Std**:
+   - **Rationale**: Adjusted normalization to match Assignment 1’s parameters, aligning with the target encoder’s preprocessing to reduce B4B-related discrepancies.
+   - **Implementation**: Set `MEAN=[0.4914, 0.4822, 0.4465]`, `STD=[0.2470, 0.2435, 0.2616]` in `config.py`, retrained ResNet18 with same setup as above.
+   - **Outcome**: Achieved L2 score ~5.55, slightly worse than baseline ResNet18, possibly due to normalization sensitivity.
+   - **Parameters**: CIFAR-10 normalization, same as ResNet18 setup.
 
 4. **L2 Normalization in Outputs**:
-   - **Rationale**: Normalized outputs to match target encoder scaling, reducing B4B noise impact.
-   - **Implementation**: Added `F.normalize(out, dim=1)` in `cnn_encoder.py`, retrained ResNet18.
-   - **Outcome**: Worse L2 score.
+   - **Rationale**: Applied L2 normalization to student model outputs to match potential target encoder scaling, aiming to mitigate B4B noise effects.
+   - **Implementation**: Added `F.normalize(out, dim=1)` in `cnn_encoder.py`, retrained ResNet18 with same setup.
+   - **Outcome**: Poor L2 score ~25.46, indicating normalization disrupted representation alignment.
    - **Parameters**: Same as ResNet18 setup.
 
 
